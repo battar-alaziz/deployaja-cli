@@ -3,6 +3,7 @@ package api
 import (
 	"bufio"
 	"bytes"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -36,17 +37,23 @@ type APIClient struct {
 	Claims     *JWTClaims
 }
 
-func NewApiClient(token string) *APIClient {
+func NewApiClient(token string, insecure bool) *APIClient {
 	baseUrl := os.Getenv("DEPLOYAJA_API_URL")
 	if baseUrl == "" {
 		baseUrl = "https://deployaja.id"
+	}
+
+	tr := &http.Transport{}
+	if strings.HasPrefix(baseUrl, "https://") && insecure {
+		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
 	client := &APIClient{
 		BaseURL:  baseUrl + "/api/v1",
 		LoginURL: baseUrl + "/login",
 		HTTPClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout:   30 * time.Second,
+			Transport: tr,
 		},
 		Token: token,
 	}

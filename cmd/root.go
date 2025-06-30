@@ -17,6 +17,7 @@ import (
 var (
 	cfgFile   string
 	apiClient *api.APIClient
+	insecure  bool
 )
 
 var rootCmd = &cobra.Command{
@@ -35,6 +36,7 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
+	rootCmd.PersistentFlags().BoolVar(&insecure, "insecure", false, "Skip TLS certificate verification")
 }
 
 func initConfig() {
@@ -50,14 +52,14 @@ func initConfig() {
 		os.MkdirAll(configPath, 0755)
 
 		viper.AddConfigPath(configPath)
-		viper.SetConfigType("yaml")		
+		viper.SetConfigType("yaml")
 	}
 
 	viper.AutomaticEnv()
 	viper.ReadInConfig()
 
 	token := config.LoadToken()
-	apiClient = api.NewApiClient(token)
+	apiClient = api.NewApiClient(token, insecure)
 }
 
 func ensureAuthenticated() error {

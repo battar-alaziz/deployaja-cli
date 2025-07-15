@@ -280,7 +280,7 @@ func (c *APIClient) GetCostEstimate(config *config.DeploymentConfig) (*CostRespo
 	return &costResp, err
 }
 
-func (c *APIClient) Deploy(config *config.DeploymentConfig, dryRun bool) (*DeployResponse, error) {
+func (c *APIClient) Deploy(config *config.DeploymentConfig, dryRun bool, dockerUsername, dockerPassword, dockerRegistry string) (*DeployResponse, error) {
 	yamlData, err := yaml.Marshal(config)
 	if err != nil {
 		return nil, err
@@ -290,6 +290,9 @@ func (c *APIClient) Deploy(config *config.DeploymentConfig, dryRun bool) (*Deplo
 
 	body := map[string]interface{}{
 		"deploymentConfig": encodedConfig,
+		"username":         dockerUsername,
+		"password":         dockerPassword,
+		"registry":         dockerRegistry,
 		"dryRun":           dryRun,
 	}
 
@@ -759,7 +762,7 @@ func (c *APIClient) GetDeploymentStatus(deploymentName string) (*DeploymentStatu
 // PollDeploymentStatus polls for deployment status until it reaches a final state
 func (c *APIClient) PollDeploymentStatus(deploymentName string, onStatusUpdate func(status string)) (*DeploymentStatus, error) {
 	const maxPollingDuration = 10 * time.Minute
-	const pollInterval = 5 * time.Second
+	const pollInterval = 10 * time.Second
 
 	finalStates := map[string]bool{
 		"success":   true,

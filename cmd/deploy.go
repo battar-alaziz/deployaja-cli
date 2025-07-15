@@ -147,6 +147,39 @@ func applySetOverrides(cfg *config.DeploymentConfig, setFlags []string) error {
 func setConfigValue(cfg *config.DeploymentConfig, path, value string) error {
 	parts := strings.Split(path, ".")
 
+	// Tambahan: dukung env[index].field
+	if parts[0] == "env" && len(parts) >= 2 {
+		idxStr := parts[1]
+		if strings.HasPrefix(idxStr, "[") && strings.HasSuffix(idxStr, "]") {
+			idxStr = idxStr[1 : len(idxStr)-1]
+			idx, err := strconv.Atoi(idxStr)
+			if err != nil {
+				return fmt.Errorf("invalid env index: %v", err)
+			}
+			if idx < 0 || idx >= len(cfg.Env) {
+				return fmt.Errorf("env index %d out of range (len=%d)", idx, len(cfg.Env))
+			}
+			if len(parts) < 3 {
+				return fmt.Errorf("env[%d] requires a subfield (e.g., env[%d].value)", idx, idx)
+			}
+			switch parts[2] {
+			case "name":
+				cfg.Env[idx].Name = value
+			case "value":
+				cfg.Env[idx].Value = value
+			case "userManaged":
+				b, err := strconv.ParseBool(value)
+				if err != nil {
+					return fmt.Errorf("env[%d].userManaged must be a boolean: %v", idx, err)
+				}
+				cfg.Env[idx].UserManaged = b
+			default:
+				return fmt.Errorf("unknown env[%d] field: %s", idx, parts[2])
+			}
+			return nil
+		}
+	}
+
 	switch parts[0] {
 	case "name":
 		cfg.Name = value
